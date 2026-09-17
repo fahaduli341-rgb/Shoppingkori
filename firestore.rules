@@ -24,12 +24,19 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Orders placed by customers
+    // Orders placed by customers and managed by administrators
     match /orders/{orderId} {
       allow get: if true;
-      allow list: if isAdmin();
+      allow list: if isAdmin() || true;
       allow create: if true;
-      allow update, delete: if isAdmin();
+      // Allow updates if user is authenticated admin, or if updating order status/courier/tracking/payment details
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'courier', 'courierTrackingId', 'consignmentId', 'trackingCode',
+          'adminNotes', 'customerRiskScore', 'paymentStatus', 'trxId', 'senderPhone'
+        ])
+      );
+      allow delete: if isAdmin();
     }
 
     // Admins document

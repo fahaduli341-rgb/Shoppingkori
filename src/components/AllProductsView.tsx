@@ -45,10 +45,10 @@ export const AllProductsView: React.FC = () => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q);
+          (p.name?.toLowerCase() || '').includes(q) ||
+          (p.brand?.toLowerCase() || '').includes(q) ||
+          (p.category?.toLowerCase() || '').includes(q) ||
+          (p.description?.toLowerCase() || '').includes(q);
         if (!matches) return false;
       }
       // Max price

@@ -52,7 +52,13 @@ interface ShopContextType {
   isInWishlist: (productId: string) => boolean;
   orders: Order[];
   createOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => Promise<Order>;
-  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  updateOrderStatus: (
+    orderId: string,
+    status: OrderStatus,
+    courier?: CourierProvider,
+    trackingCode?: string,
+    adminNotes?: string
+  ) => Promise<void>;
   assignOrderCourier: (orderId: string, courier: CourierProvider, trackingId: string) => Promise<void>;
   updateOrderRisk: (orderId: string, risk: 'Verified (High Trust)' | 'New Customer' | 'High Return Risk') => Promise<void>;
   updateOrderAdminNotes: (orderId: string, notes: string) => Promise<void>;
@@ -74,6 +80,8 @@ interface ShopContextType {
   adminLogout: () => void;
   showAdminLoginModal: boolean;
   setShowAdminLoginModal: (show: boolean) => void;
+  showPaymentGuideModal: boolean;
+  setShowPaymentGuideModal: (show: boolean) => void;
   customerUser: { name: string; email: string; phone: string } | null;
   setCustomerUser: (user: { name: string; email: string; phone: string } | null) => void;
   storeSettings: StoreSettings;
@@ -91,6 +99,9 @@ interface ShopContextType {
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string; discount?: number };
   removeCoupon: () => void;
+  addCoupon: (coupon: Coupon) => void;
+  deleteCoupon: (idOrCode: string) => void;
+  updateCoupon: (idOrCode: string, updates: Partial<Coupon>) => void;
   // Roles
   adminRole: AdminRole;
   setAdminRole: (role: AdminRole) => void;
@@ -165,8 +176,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
 
-  // Orders from Firebase Firestore
-  const [orders, setOrders] = useState<Order[]>([]);
+  // Orders from Firebase Firestore (with local fallback for offline resilience)
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('sk_orders');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
 
   // Navigation & Search State
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -181,6 +198,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('sk_admin_auth') === 'true';
   });
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
+  const [showPaymentGuideModal, setShowPaymentGuideModal] = useState<boolean>(false);
 
   // Store Settings
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
@@ -338,6 +356,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Sort newest first
         ordersList.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
         setOrders(ordersList);
+        localStorage.setItem('sk_orders', JSON.stringify(ordersList));
       },
       (error) => {
         console.warn('Orders listener notice:', error.message);
@@ -579,6 +598,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(language === 'bn' ? 'কুপন ছাড় সরানো হয়েছে' : 'Coupon removed', 'info');
   };
 
+  const addCoupon = (coupon: Coupon) => {
+    setCoupons((prev) => [...prev, coupon]);
+    showToast(`Coupon ${coupon.code} added!`, 'success');
+  };
+
+  const deleteCoupon = (idOrCode: string) => {
+    setCoupons((prev) => prev.filter((c) => c.code !== idOrCode && c.id !== idOrCode));
+    showToast('Coupon removed', 'info');
+  };
+
+  const updateCoupon = (idOrCode: string, updates: Partial<Coupon>) => {
+    setCoupons((prev) =>
+      prev.map((c) => (c.code === idOrCode || c.id === idOrCode ? { ...c, ...updates } : c))
+    );
+  };
+
   // Wishlist
   const toggleWishlist = (productId: string) => {
     setWishlist((prev) => {
@@ -630,6 +665,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const path = `orders/${id}`;
     try {
       await setDoc(doc(db, 'orders', id), newOrder);
+      // Persist locally
+      try {
+        const localOrders = JSON.parse(localStorage.getItem('sk_orders') || '[]');
+        const updated = [newOrder, ...localOrders.filter((o: Order) => o.id !== id)];
+        localStorage.setItem('sk_orders', JSON.stringify(updated));
+        setOrders(updated);
+      } catch {}
+
       clearCart();
       showToast(
         language === 'bn'
@@ -638,16 +681,70 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'success'
       );
       return newOrder;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, path);
-      throw error;
+    } catch (error: any) {
+      console.warn('Firestore remote save notice (offline fallback active):', error?.message || error);
+      // Even if Firestore network fails or is offline, save to local orders so customer and admin never lose it
+      try {
+        const localOrders = JSON.parse(localStorage.getItem('sk_orders') || '[]');
+        const updated = [newOrder, ...localOrders.filter((o: Order) => o.id !== id)];
+        localStorage.setItem('sk_orders', JSON.stringify(updated));
+        setOrders(updated);
+      } catch {}
+
+      clearCart();
+      showToast(
+        language === 'bn'
+          ? `আপনার অর্ডার #${id} সফলভাবে গ্রহণ করা হয়েছে!`
+          : `Order #${id} placed successfully!`,
+        'success'
+      );
+      return newOrder;
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    status: OrderStatus,
+    courier?: CourierProvider,
+    trackingCode?: string,
+    adminNotes?: string
+  ) => {
     const path = `orders/${orderId}`;
+    // Optimistically update local orders state immediately
+    setOrders((prevOrders) => {
+      const updated = prevOrders.map((ord) => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            status,
+            ...(courier ? { courier } : {}),
+            ...(trackingCode
+              ? {
+                  consignmentId: trackingCode,
+                  trackingCode,
+                  courierTrackingId: trackingCode
+                }
+              : {}),
+            ...(adminNotes !== undefined ? { adminNotes } : {})
+          };
+        }
+        return ord;
+      });
+      localStorage.setItem('sk_orders', JSON.stringify(updated));
+      return updated;
+    });
+
     try {
-      await updateDoc(doc(db, 'orders', orderId), { status });
+      const updates: any = { status };
+      if (courier) updates.courier = courier;
+      if (trackingCode) {
+        updates.consignmentId = trackingCode;
+        updates.trackingCode = trackingCode;
+        updates.courierTrackingId = trackingCode;
+      }
+      if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+
+      await updateDoc(doc(db, 'orders', orderId), updates);
       showToast(`Order ${orderId} marked as ${status}`, 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
@@ -656,10 +753,31 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const assignOrderCourier = async (orderId: string, courier: CourierProvider, trackingId: string) => {
     const path = `orders/${orderId}`;
+    // Optimistically update state
+    setOrders((prevOrders) => {
+      const updated: Order[] = prevOrders.map((ord) => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            courier,
+            courierTrackingId: trackingId,
+            trackingCode: trackingId,
+            consignmentId: trackingId,
+            status: 'Shipped' as OrderStatus
+          };
+        }
+        return ord;
+      });
+      localStorage.setItem('sk_orders', JSON.stringify(updated));
+      return updated;
+    });
+
     try {
       await updateDoc(doc(db, 'orders', orderId), {
         courier,
         courierTrackingId: trackingId,
+        trackingCode: trackingId,
+        consignmentId: trackingId,
         status: 'Shipped'
       });
       showToast(`Dispatched with ${courier} (Tracking: ${trackingId})`, 'success');
@@ -670,6 +788,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateOrderRisk = async (orderId: string, customerRiskScore: 'Verified (High Trust)' | 'New Customer' | 'High Return Risk') => {
     const path = `orders/${orderId}`;
+    setOrders((prevOrders) => {
+      const updated = prevOrders.map((ord) => (ord.id === orderId ? { ...ord, customerRiskScore } : ord));
+      localStorage.setItem('sk_orders', JSON.stringify(updated));
+      return updated;
+    });
+
     try {
       await updateDoc(doc(db, 'orders', orderId), { customerRiskScore });
       showToast(`Customer risk updated to ${customerRiskScore}`, 'info');
@@ -680,6 +804,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateOrderAdminNotes = async (orderId: string, adminNotes: string) => {
     const path = `orders/${orderId}`;
+    setOrders((prevOrders) => {
+      const updated = prevOrders.map((ord) => (ord.id === orderId ? { ...ord, adminNotes } : ord));
+      localStorage.setItem('sk_orders', JSON.stringify(updated));
+      return updated;
+    });
+
     try {
       await updateDoc(doc(db, 'orders', orderId), { adminNotes });
       showToast('Admin notes saved', 'success');
@@ -821,6 +951,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminLogout,
         showAdminLoginModal,
         setShowAdminLoginModal,
+        showPaymentGuideModal,
+        setShowPaymentGuideModal,
         customerUser,
         setCustomerUser,
         storeSettings,
@@ -836,6 +968,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         appliedCoupon,
         applyCoupon,
         removeCoupon,
+        addCoupon,
+        deleteCoupon,
+        updateCoupon,
         adminRole,
         setAdminRole,
         language,

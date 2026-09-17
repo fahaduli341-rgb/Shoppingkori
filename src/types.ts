@@ -22,6 +22,7 @@ export interface CategoryDefinition {
   nameBn: string;
   iconName: string;
   subcategories: string[];
+  subCategories?: string[];
 }
 
 export interface ProductVariants {
@@ -51,8 +52,11 @@ export interface Product {
   isSpecialOffer?: boolean;
   isBestSeller?: boolean;
   isFlashSale?: boolean;
+  inFlashSale?: boolean;
   unit?: string;
   variants?: ProductVariants;
+  sizes?: string[];
+  colors?: string[];
   vendorId?: string;
   vendorName?: string;
   lowStockThreshold?: number;
@@ -82,6 +86,8 @@ export type CourierProvider =
   | 'Pathao'
   | 'RedX'
   | 'Sundarban'
+  | 'eCourier'
+  | 'Paperfly'
   | 'Merchant Fleet';
 
 export type PaymentMethod =
@@ -125,19 +131,26 @@ export interface Order {
   status: OrderStatus;
   courier?: CourierProvider;
   courierTrackingId?: string;
-  customerRiskScore?: 'Verified (High Trust)' | 'New Customer' | 'High Return Risk';
+  consignmentId?: string;
+  trackingCode?: string;
+  customerRiskScore?: 'Verified (High Trust)' | 'New Customer' | 'High Return Risk' | 'Low' | 'Medium' | 'High';
   adminNotes?: string;
   createdAt: string;
   estimatedDelivery: string;
+  trxId?: string;
+  senderPhone?: string;
 }
 
 export interface Vendor {
   id: string;
   shopName: string;
+  storeName?: string;
   ownerName: string;
   phone: string;
   email: string;
   city: string;
+  address?: string;
+  isVerified?: boolean;
   status: 'Active' | 'Pending' | 'Suspended';
   commissionRate: number; // e.g. 5%
   rating: number;
@@ -147,11 +160,19 @@ export interface Vendor {
 }
 
 export interface Coupon {
+  id?: string;
   code: string;
   discount: number; // in BDT
   minOrder: number;
   description: string;
   isActive: boolean;
+  discountType?: 'flat' | 'percent';
+  discountValue?: number;
+  minSpend?: number;
+  maxDiscount?: number;
+  validUntil?: string;
+  usageLimit?: number;
+  usedCount?: number;
 }
 
 export type AdminRole = 'Super Admin' | 'Order Manager' | 'Product Manager' | 'Vendor Partner';
@@ -192,6 +213,14 @@ export interface StoreSettings {
   primaryColor?: string;
   secondaryColor?: string;
   updatedAt?: string;
+  // Mobile Banking & Payment Numbers
+  bkashNumber?: string;
+  bkashType?: 'Personal' | 'Merchant' | 'Agent';
+  nagadNumber?: string;
+  nagadType?: 'Personal' | 'Merchant';
+  rocketNumber?: string;
+  cellfinNumber?: string;
+  bankDetails?: string;
 }
 
 export const defaultStoreSettings: StoreSettings = {
@@ -210,7 +239,14 @@ export const defaultStoreSettings: StoreSettings = {
   facebookUrl: 'https://facebook.com',
   adminPassword: 'admin123456',
   primaryColor: '#E85D2C',
-  secondaryColor: '#1F6F4A'
+  secondaryColor: '#1F6F4A',
+  bkashNumber: '01700000000',
+  bkashType: 'Personal',
+  nagadNumber: '01800000000',
+  nagadType: 'Personal',
+  rocketNumber: '01900000000',
+  cellfinNumber: '01700000000',
+  bankDetails: 'Islami Bank Bangladesh Ltd (IBBL), A/C: 2050XXXXXXXXXX, Branch: Motijheel, Dhaka'
 };
 
 export type AppView =

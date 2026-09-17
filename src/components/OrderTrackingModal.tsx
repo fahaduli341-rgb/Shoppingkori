@@ -15,7 +15,9 @@ export const OrderTrackingModal: React.FC = () => {
     e.preventDefault();
     const query = searchId.trim().toUpperCase();
     const found = orders.find(
-      (o) => o.id.toUpperCase() === query || o.phone.includes(query)
+      (o) =>
+        (o.id ? o.id.toUpperCase() === query : false) ||
+        (o.phone ? o.phone.includes(query) : false)
     );
     setSelectedOrder(found || null);
     setSearched(true);

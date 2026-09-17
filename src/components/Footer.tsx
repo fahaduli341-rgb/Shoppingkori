@@ -9,11 +9,12 @@ import {
   MessageSquare,
   Mail,
   MapPin,
-  Lock
+  Lock,
+  HelpCircle
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { setCurrentView, setSelectedCategory, setShowAdminLoginModal, isAdminLoggedIn, storeSettings } = useShop();
+  const { setCurrentView, setSelectedCategory, setShowAdminLoginModal, isAdminLoggedIn, storeSettings, setShowPaymentGuideModal } = useShop();
   const [subscribeEmail, setSubscribeEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -277,21 +278,53 @@ export const Footer: React.FC = () => {
           {/* Payment Methods Badges matching Screenshot_20260916-121212 */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-emerald-200 mr-1">We accept</span>
-            <span className="px-2.5 py-1 bg-white text-stone-800 rounded-md font-bold text-[11px] shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="px-2.5 py-1 bg-white hover:bg-pink-50 text-[#E2136E] rounded-md font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+              title="Click for bKash payment instructions"
+            >
               bKash
-            </span>
-            <span className="px-2.5 py-1 bg-white text-stone-800 rounded-md font-bold text-[11px] shadow-2xs">
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="px-2.5 py-1 bg-white hover:bg-orange-50 text-[#F7941D] rounded-md font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+              title="Click for Nagad payment instructions"
+            >
               Nagad
-            </span>
-            <span className="px-2.5 py-1 bg-white text-stone-800 rounded-md font-bold text-[11px] shadow-2xs">
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="px-2.5 py-1 bg-white hover:bg-purple-50 text-[#8C3494] rounded-md font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+              title="Click for Rocket payment instructions"
+            >
               Rocket
-            </span>
-            <span className="px-2.5 py-1 bg-white text-stone-800 rounded-md font-bold text-[11px] shadow-2xs">
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded-md font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+            >
               Card
-            </span>
-            <span className="px-2.5 py-1 bg-white text-stone-800 rounded-md font-bold text-[11px] shadow-2xs">
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-800 rounded-md font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+            >
               Cash on delivery
-            </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowPaymentGuideModal(true)}
+              className="ml-1 px-2.5 py-1 bg-emerald-800/90 hover:bg-emerald-700 text-amber-300 border border-emerald-600 rounded-md font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <HelpCircle className="w-3 h-3 text-amber-300" />
+              <span>পেমেন্ট নির্দেশিকা</span>
+            </button>
           </div>
 
           <div className="text-[11px] text-emerald-400">

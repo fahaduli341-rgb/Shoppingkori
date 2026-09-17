@@ -23,7 +23,10 @@ import {
   KeyRound,
   AlertCircle,
   Share2,
-  Copy
+  Copy,
+  Smartphone,
+  Banknote,
+  Building
 } from 'lucide-react';
 
 export const AdminSettingsTab: React.FC = () => {
@@ -73,7 +76,14 @@ export const AdminSettingsTab: React.FC = () => {
         announcement: formData.announcement.trim(),
         deliveryInsideDhaka: Number(formData.deliveryInsideDhaka) || 0,
         deliveryOutsideDhaka: Number(formData.deliveryOutsideDhaka) || 0,
-        facebookUrl: formData.facebookUrl?.trim() || ''
+        facebookUrl: formData.facebookUrl?.trim() || '',
+        bkashNumber: formData.bkashNumber?.trim() || '',
+        bkashType: formData.bkashType || 'Personal',
+        nagadNumber: formData.nagadNumber?.trim() || '',
+        nagadType: formData.nagadType || 'Personal',
+        rocketNumber: formData.rocketNumber?.trim() || '',
+        cellfinNumber: formData.cellfinNumber?.trim() || '',
+        bankDetails: formData.bankDetails?.trim() || ''
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 4000);
@@ -347,6 +357,121 @@ export const AdminSettingsTab: React.FC = () => {
                       className="w-full bg-white border border-stone-300 rounded-xl pl-12 pr-3 py-2 text-sm font-bold text-stone-900 focus:outline-hidden focus:border-emerald-600"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Banking & Payment Accounts */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-5">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <div className="flex items-center gap-2 text-stone-800">
+                  <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center">
+                    <Smartphone className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm sm:text-base">Mobile Banking & Payment Numbers</h3>
+                    <p className="text-xs text-stone-500">বিকাশ, নগদ, রকেট ও ব্যাংক একাউন্ট নম্বর সেট করুন</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* bKash Settings */}
+                <div className="p-4 bg-pink-50/50 border border-pink-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-pink-900 flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded bg-[#E2136E] text-white text-[10px] flex items-center justify-center font-bold">bK</span>
+                      <span>bKash (বিকাশ) নম্বর</span>
+                    </span>
+                    <select
+                      value={formData.bkashType || 'Personal'}
+                      onChange={(e) => handleChange('bkashType', e.target.value as any)}
+                      className="bg-white border border-pink-300 rounded-lg px-2 py-1 text-[11px] font-bold text-pink-900"
+                    >
+                      <option value="Personal">Personal (Send Money)</option>
+                      <option value="Merchant">Merchant (Make Payment)</option>
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.bkashNumber || ''}
+                    onChange={(e) => handleChange('bkashNumber', e.target.value)}
+                    placeholder="e.g. 01712345678"
+                    className="w-full bg-white border border-pink-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 focus:outline-hidden focus:border-[#E2136E]"
+                  />
+                  <p className="text-[10px] text-pink-700">
+                    কাস্টমার চেকআউটে এই নম্বরে টাকা পাঠিয়ে TrxID প্রদান করবেন।
+                  </p>
+                </div>
+
+                {/* Nagad Settings */}
+                <div className="p-4 bg-orange-50/50 border border-orange-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-orange-950 flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded bg-[#F7941D] text-white text-[10px] flex items-center justify-center font-bold">নগদ</span>
+                      <span>Nagad (নগদ) নম্বর</span>
+                    </span>
+                    <select
+                      value={formData.nagadType || 'Personal'}
+                      onChange={(e) => handleChange('nagadType', e.target.value as any)}
+                      className="bg-white border border-orange-300 rounded-lg px-2 py-1 text-[11px] font-bold text-orange-950"
+                    >
+                      <option value="Personal">Personal (Send Money)</option>
+                      <option value="Merchant">Merchant (Make Payment)</option>
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.nagadNumber || ''}
+                    onChange={(e) => handleChange('nagadNumber', e.target.value)}
+                    placeholder="e.g. 01812345678"
+                    className="w-full bg-white border border-orange-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 focus:outline-hidden focus:border-[#F7941D]"
+                  />
+                  <p className="text-[10px] text-orange-700">
+                    নগদ একাউন্ট নম্বর যা কাস্টমার কপি করে টাকা পাঠাতে পারবেন।
+                  </p>
+                </div>
+
+                {/* Rocket Settings */}
+                <div className="p-4 bg-purple-50/50 border border-purple-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-purple-950 flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded bg-[#8C3494] text-white text-[10px] flex items-center justify-center font-bold">DB</span>
+                      <span>Rocket (রকেট) নম্বর</span>
+                    </span>
+                    <span className="text-[10px] text-purple-700 font-semibold">12-Digit DBBL</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.rocketNumber || ''}
+                    onChange={(e) => handleChange('rocketNumber', e.target.value)}
+                    placeholder="e.g. 019123456789"
+                    className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 focus:outline-hidden focus:border-[#8C3494]"
+                  />
+                </div>
+
+                {/* Bank / CellFin Details */}
+                <div className="p-4 bg-sky-50/50 border border-sky-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-sky-950 flex items-center gap-1.5">
+                      <Building className="w-4 h-4 text-[#0072BC]" />
+                      <span>Bank / CellFin Details</span>
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.cellfinNumber || ''}
+                    onChange={(e) => handleChange('cellfinNumber', e.target.value)}
+                    placeholder="CellFin Mobile No: 01XXXXXXXXX"
+                    className="w-full bg-white border border-sky-300 rounded-xl px-3 py-2 text-xs font-mono text-stone-900 focus:outline-hidden focus:border-[#0072BC]"
+                  />
+                  <textarea
+                    rows={2}
+                    value={formData.bankDetails || ''}
+                    onChange={(e) => handleChange('bankDetails', e.target.value)}
+                    placeholder="Bank Name, Account Name, Account No, Branch..."
+                    className="w-full bg-white border border-sky-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-hidden focus:border-[#0072BC]"
+                  />
                 </div>
               </div>
             </div>

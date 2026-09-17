@@ -14,9 +14,17 @@ export const googleProvider = new GoogleAuthProvider();
 export async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client appears offline. Verify network connection.');
+  } catch (error: any) {
+    if (
+      error?.code === 'unavailable' ||
+      (error instanceof Error &&
+        (error.message.includes('the client is offline') ||
+          error.message.includes('unavailable') ||
+          error.message.includes('Could not reach Cloud Firestore')))
+    ) {
+      console.warn('Firebase client appears offline or connecting. The app will operate seamlessly with local persistence.');
+    } else {
+      console.warn('Firestore connection check notice:', error?.message || error);
     }
   }
 }

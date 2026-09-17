@@ -19,12 +19,13 @@ import { OrderTrackingModal } from './components/OrderTrackingModal';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { ProductDetailModal } from './components/ProductDetailModal';
+import { PaymentInstructionsModal } from './components/PaymentInstructionsModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { currentView, toast } = useShop();
+  const { currentView, toast, showPaymentGuideModal, setShowPaymentGuideModal } = useShop();
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -99,6 +100,10 @@ const MainLayout: React.FC = () => {
       {/* Global Modals & Floating Tools */}
       <ProductDetailModal />
       <AdminLoginModal />
+      <PaymentInstructionsModal
+        isOpen={showPaymentGuideModal}
+        onClose={() => setShowPaymentGuideModal(false)}
+      />
       <FloatingWhatsApp />
     </div>
   );

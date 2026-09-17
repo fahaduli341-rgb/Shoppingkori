@@ -70,7 +70,7 @@ export const ShopByCategory: React.FC = () => {
           return (
             <button
               key={cat.name}
-              id={`cat-card-${cat.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+              id={`cat-card-${(cat.name || 'category').toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
               onClick={() => handleCategoryClick(cat.name)}
               className="bg-white rounded-2xl border border-stone-200/80 p-3 sm:p-4 flex flex-col items-center text-center justify-center hover:border-orange-300 hover:shadow-sm transition-all group active:scale-95"
             >

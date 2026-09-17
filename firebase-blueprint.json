@@ -171,6 +171,46 @@
         "estimatedDelivery": {
           "type": "string",
           "description": "Expected delivery date"
+        },
+        "courier": {
+          "type": "string",
+          "description": "Assigned delivery courier service",
+          "maxLength": 50
+        },
+        "courierTrackingId": {
+          "type": "string",
+          "description": "Courier consignment tracking number",
+          "maxLength": 100
+        },
+        "consignmentId": {
+          "type": "string",
+          "description": "Courier parcel consignment ID",
+          "maxLength": 100
+        },
+        "trackingCode": {
+          "type": "string",
+          "description": "Customer parcel tracking code",
+          "maxLength": 100
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Merchant internal operational notes",
+          "maxLength": 1000
+        },
+        "customerRiskScore": {
+          "type": "string",
+          "description": "Fraud prevention and trust assessment",
+          "maxLength": 50
+        },
+        "trxId": {
+          "type": "string",
+          "description": "Mobile financial transaction identifier",
+          "maxLength": 100
+        },
+        "senderPhone": {
+          "type": "string",
+          "description": "Mobile financial payment sender number",
+          "maxLength": 30
         }
       },
       "required": ["customerName", "phone", "district", "address", "paymentMethod", "totalAmount", "items", "status"]

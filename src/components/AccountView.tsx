@@ -62,7 +62,9 @@ export const AccountView: React.FC = () => {
   // If Logged in: Profile & My Orders
   if (customerUser) {
     const customerOrders = orders.filter(
-      (o) => o.phone === customerUser.phone || (o.email && o.email.toLowerCase() === customerUser.email.toLowerCase())
+      (o) =>
+        (customerUser.phone && o.phone === customerUser.phone) ||
+        (Boolean(o.email) && Boolean(customerUser.email) && o.email!.toLowerCase() === customerUser.email!.toLowerCase())
     );
 
     return (
@@ -71,7 +73,7 @@ export const AccountView: React.FC = () => {
         <div className="bg-white rounded-3xl border border-stone-200/80 p-6 sm:p-8 shadow-xs mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xl">
-              {customerUser.name.charAt(0).toUpperCase()}
+              {(customerUser.name || 'User').charAt(0).toUpperCase()}
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-stone-900">
