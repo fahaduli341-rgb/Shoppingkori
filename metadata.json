@@ -1,0 +1,7 @@
+{
+  "name": "Shopping Kori",
+  "description": "Shopping Kori - Bangladesh's trusted online marketplace for everyday essentials, home appliances, electronics, groceries, and fashion with cash on delivery and hidden admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

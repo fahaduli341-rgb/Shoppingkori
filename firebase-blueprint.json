@@ -1,0 +1,257 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An authentic merchandise item listed in Shopping Kori store catalog",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Product title",
+          "maxLength": 200
+        },
+        "brand": {
+          "type": "string",
+          "description": "Manufacturer or brand name",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category",
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Selling price in BDT"
+        },
+        "originalPrice": {
+          "type": "number",
+          "description": "Original retail price in BDT"
+        },
+        "discountPercent": {
+          "type": "number",
+          "description": "Discount percentage"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Badge label like NEW or BEST SELLER",
+          "maxLength": 50
+        },
+        "stock": {
+          "type": "number",
+          "description": "Available inventory quantity"
+        },
+        "inStock": {
+          "type": "boolean",
+          "description": "Whether item is in stock"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating out of 5"
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "Number of reviews"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full product description",
+          "maxLength": 2000
+        },
+        "sku": {
+          "type": "string",
+          "description": "Stock keeping unit identifier",
+          "maxLength": 100
+        },
+        "image": {
+          "type": "string",
+          "description": "Product image URL",
+          "maxLength": 1000
+        },
+        "unit": {
+          "type": "string",
+          "description": "Packaging unit or size",
+          "maxLength": 50
+        },
+        "isSpecialOffer": {
+          "type": "boolean",
+          "description": "Whether marked as special deal"
+        },
+        "isBestSeller": {
+          "type": "boolean",
+          "description": "Whether marked as best seller"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of product creation"
+        }
+      },
+      "required": ["name", "brand", "category", "price", "stock", "inStock", "image"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order placed on Shopping Kori",
+      "type": "object",
+      "properties": {
+        "customerName": {
+          "type": "string",
+          "description": "Full name of buyer",
+          "maxLength": 150
+        },
+        "email": {
+          "type": "string",
+          "description": "Buyer email address",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Bangladeshi contact phone number",
+          "maxLength": 20
+        },
+        "division": {
+          "type": "string",
+          "description": "Bangladesh administrative division",
+          "maxLength": 50
+        },
+        "district": {
+          "type": "string",
+          "description": "District or city",
+          "maxLength": 50
+        },
+        "address": {
+          "type": "string",
+          "description": "Detailed street delivery address",
+          "maxLength": 500
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional order instructions",
+          "maxLength": 500
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment mode such as Cash on Delivery",
+          "maxLength": 50
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Unpaid or Paid",
+          "maxLength": 50
+        },
+        "deliveryZone": {
+          "type": "string",
+          "description": "Inside Dhaka or Outside Dhaka",
+          "maxLength": 50
+        },
+        "shippingCost": {
+          "type": "number",
+          "description": "Shipping fee in BDT"
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Sum of item costs in BDT"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Grand total in BDT"
+        },
+        "items": {
+          "type": "array",
+          "description": "Ordered line items"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current order lifecycle status",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "estimatedDelivery": {
+          "type": "string",
+          "description": "Expected delivery date"
+        }
+      },
+      "required": ["customerName", "phone", "district", "address", "paymentMethod", "totalAmount", "items", "status"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Global merchant contact information and store configurations",
+      "type": "object",
+      "properties": {
+        "storeName": {
+          "type": "string",
+          "description": "Public business name",
+          "maxLength": 100
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "WhatsApp contact number for customer inquiries",
+          "maxLength": 30
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer care telephone or hotline",
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "description": "Official support email address",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical store or warehouse address / city",
+          "maxLength": 300
+        },
+        "announcement": {
+          "type": "string",
+          "description": "Top promotional banner text",
+          "maxLength": 300
+        },
+        "deliveryInsideDhaka": {
+          "type": "number",
+          "description": "Standard shipping fee inside Dhaka in BDT"
+        },
+        "deliveryOutsideDhaka": {
+          "type": "number",
+          "description": "Standard shipping fee outside Dhaka in BDT"
+        },
+        "showFloatingWhatsApp": {
+          "type": "boolean",
+          "description": "Whether to display floating WhatsApp button on storefront"
+        },
+        "facebookUrl": {
+          "type": "string",
+          "description": "Official Facebook page link",
+          "maxLength": 250
+        },
+        "adminPassword": {
+          "type": "string",
+          "description": "Custom password for admin login access",
+          "maxLength": 100
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last settings update"
+        }
+      },
+      "required": ["storeName", "whatsappNumber", "phone", "email", "address"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Public catalog of merchant products in Shopping Kori"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Orders placed by buyers for delivery"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Global merchant store configurations and contact numbers"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'fahad1wo8@gmail.com' ||
+        request.auth.token.email == 'admin@shoppingkori.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Products catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Orders placed by customers
+    match /orders/{orderId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // Admins document
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Store settings (WhatsApp, hotline, email, location, banner notice, password, etc.)
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Connection check document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
