@@ -154,10 +154,6 @@ export const AdminLoginModal: React.FC = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <div className="flex items-center justify-between mt-1 text-[11px] text-stone-500">
-              <span>Default: <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-[10px] text-stone-700">admin123456</code></span>
-              <span>Can change inside Settings</span>
-            </div>
           </div>
 
           <button

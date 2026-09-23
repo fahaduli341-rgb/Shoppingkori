@@ -95,10 +95,9 @@ export const AdminSettingsTab: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (confirm('Do you want to reset all store settings back to original defaults?')) {
-      setFormData(defaultStoreSettings);
-      setSaveSuccess(false);
-    }
+    setFormData(defaultStoreSettings);
+    setSaveSuccess(false);
+    showToast('Store settings reset to defaults. Click Save Changes to commit.', 'info');
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -643,7 +642,7 @@ export const AdminSettingsTab: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
                   <span className="text-[11px] text-stone-500">
-                    💡 Tip: Default password is <code className="bg-stone-200 px-1 py-0.5 rounded text-stone-700 font-mono text-[10px]">admin123456</code>. You can set any strong password.
+                    🔒 Set a private, strong password to secure your Merchant Seller Center.
                   </span>
 
                   <button

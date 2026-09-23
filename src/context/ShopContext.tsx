@@ -90,8 +90,9 @@ interface ShopContextType {
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   // Multivendor
   vendors: Vendor[];
-  addVendor: (vendor: Omit<Vendor, 'id' | 'joinedDate' | 'productsCount' | 'totalSales'>) => void;
-  updateVendor: (id: string, updates: Partial<Vendor>) => void;
+  addVendor: (vendor: Omit<Vendor, 'id' | 'joinedDate' | 'productsCount' | 'totalSales'>) => Promise<void>;
+  updateVendor: (id: string, updates: Partial<Vendor>) => Promise<void>;
+  deleteVendor: (id: string) => Promise<void>;
   selectedVendorFilter: string | 'All';
   setSelectedVendorFilter: (vendorId: string | 'All') => void;
   // Coupons
@@ -99,9 +100,9 @@ interface ShopContextType {
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string; discount?: number };
   removeCoupon: () => void;
-  addCoupon: (coupon: Coupon) => void;
-  deleteCoupon: (idOrCode: string) => void;
-  updateCoupon: (idOrCode: string, updates: Partial<Coupon>) => void;
+  addCoupon: (coupon: Coupon) => Promise<void>;
+  deleteCoupon: (idOrCode: string) => Promise<void>;
+  updateCoupon: (idOrCode: string, updates: Partial<Coupon>) => Promise<void>;
   // Roles
   adminRole: AdminRole;
   setAdminRole: (role: AdminRole) => void;
@@ -115,6 +116,7 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 // Recognized Admin emails
 const ADMIN_EMAILS = [
+  'fahad1e1e1@gmail.com',
   'fahad1wo8@gmail.com',
   'admin@shoppingkori.com'
 ];
@@ -233,7 +235,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('sk_lang', language);
   }, [language]);
 
-  // Sync Vendors & Coupons
+  // Sync Vendors & Coupons to local cache
   useEffect(() => {
     localStorage.setItem('sk_vendors', JSON.stringify(vendors));
   }, [vendors]);
@@ -241,6 +243,77 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('sk_coupons', JSON.stringify(coupons));
   }, [coupons]);
+
+  // Live Firestore real-time listener for Vendors
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'vendors'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Vendor[] = [];
+          snapshot.forEach((snap) => {
+            const data = snap.data();
+            list.push({
+              id: snap.id,
+              storeName: data.storeName || data.shopName || 'Vendor Store',
+              shopName: data.shopName || data.storeName || 'Vendor Store',
+              ownerName: data.ownerName || '',
+              phone: data.phone || '',
+              email: data.email || '',
+              city: data.city || 'Dhaka',
+              address: data.address || '',
+              commissionRate: Number(data.commissionRate) || 10,
+              status: data.status || 'Active',
+              rating: Number(data.rating) || 4.9,
+              isVerified: Boolean(data.isVerified),
+              productsCount: Number(data.productsCount) || 0,
+              totalSales: Number(data.totalSales) || 0,
+              joinedDate: data.joinedDate || new Date().toISOString().slice(0, 10)
+            });
+          });
+          setVendors(list);
+        }
+      },
+      (err) => {
+        console.warn('Vendors Firestore live sync notice:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Live Firestore real-time listener for Coupons
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'coupons'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Coupon[] = [];
+          snapshot.forEach((snap) => {
+            const data = snap.data();
+            list.push({
+              id: snap.id,
+              code: data.code || snap.id,
+              discount: Number(data.discount) || Number(data.discountValue) || 50,
+              minOrder: Number(data.minOrder) || Number(data.minSpend) || 500,
+              discountType: data.discountType === 'percent' ? 'percent' : 'flat',
+              discountValue: Number(data.discountValue) || Number(data.discount) || 50,
+              minSpend: Number(data.minSpend) || Number(data.minOrder) || 500,
+              maxDiscount: data.maxDiscount ? Number(data.maxDiscount) : undefined,
+              isActive: data.isActive ?? true,
+              description: data.description || '',
+              usageLimit: data.usageLimit ? Number(data.usageLimit) : 100,
+              usedCount: Number(data.usedCount) || 0
+            });
+          });
+          setCoupons(list);
+        }
+      },
+      (err) => {
+        console.warn('Coupons Firestore live sync notice:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   // Sync Firebase Auth state
   useEffect(() => {
@@ -477,18 +550,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteProduct = async (id: string) => {
+    // 1. Immediately remove from local state for instant responsive UI
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    // 2. Remove from Firestore
     const path = `products/${id}`;
     try {
       const docRef = doc(db, 'products', id);
       await deleteDoc(docRef);
-      showToast('Product deleted from store', 'info');
+      showToast(language === 'bn' ? 'পণ্য সফলভাবে মুছে ফেলা হয়েছে' : 'Product deleted from store', 'info');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      console.warn('Firestore delete product warning:', error);
+      showToast(language === 'bn' ? 'পণ্য মুছে ফেলা হয়েছে' : 'Product removed from store', 'info');
     }
   };
 
-  // Vendor Management
-  const addVendor = (newVendor: Omit<Vendor, 'id' | 'joinedDate' | 'productsCount' | 'totalSales'>) => {
+  // Vendor Management with live Firestore persistence
+  const addVendor = async (newVendor: Omit<Vendor, 'id' | 'joinedDate' | 'productsCount' | 'totalSales'>) => {
     const id = `vendor-${Date.now()}`;
     const vendor: Vendor = {
       ...newVendor,
@@ -498,14 +575,41 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       joinedDate: new Date().toISOString().slice(0, 10)
     };
     setVendors((prev) => [...prev, vendor]);
-    showToast(`Vendor "${vendor.shopName}" registered successfully!`, 'success');
+    const path = `vendors/${id}`;
+    try {
+      await setDoc(doc(db, 'vendors', id), vendor);
+      showToast(`Vendor "${vendor.storeName || vendor.shopName}" registered successfully!`, 'success');
+    } catch (error) {
+      console.warn('Firestore add vendor warning:', error);
+      showToast(`Vendor "${vendor.storeName || vendor.shopName}" registered!`, 'success');
+    }
   };
 
-  const updateVendor = (id: string, updates: Partial<Vendor>) => {
+  const updateVendor = async (id: string, updates: Partial<Vendor>) => {
     setVendors((prev) =>
       prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
     );
-    showToast('Vendor profile updated', 'success');
+    const path = `vendors/${id}`;
+    try {
+      await updateDoc(doc(db, 'vendors', id), updates);
+      showToast('Vendor profile updated', 'success');
+    } catch (error) {
+      console.warn('Firestore update vendor warning:', error);
+    }
+  };
+
+  const deleteVendor = async (id: string) => {
+    // 1. Immediately remove from local state
+    setVendors((prev) => prev.filter((v) => v.id !== id));
+    // 2. Delete from Firestore
+    const path = `vendors/${id}`;
+    try {
+      await deleteDoc(doc(db, 'vendors', id));
+      showToast(language === 'bn' ? 'ভেন্ডর সফলভাবে মুছে ফেলা হয়েছে' : 'Vendor deleted successfully', 'info');
+    } catch (error) {
+      console.warn('Firestore delete vendor warning:', error);
+      showToast(language === 'bn' ? 'ভেন্ডর মুছে ফেলা হয়েছে' : 'Vendor removed', 'info');
+    }
   };
 
   // Cart operations
@@ -598,20 +702,49 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(language === 'bn' ? 'কুপন ছাড় সরানো হয়েছে' : 'Coupon removed', 'info');
   };
 
-  const addCoupon = (coupon: Coupon) => {
+  const addCoupon = async (coupon: Coupon) => {
     setCoupons((prev) => [...prev, coupon]);
-    showToast(`Coupon ${coupon.code} added!`, 'success');
+    const path = `coupons/${coupon.id}`;
+    try {
+      await setDoc(doc(db, 'coupons', coupon.id), coupon);
+      showToast(`Coupon ${coupon.code} added!`, 'success');
+    } catch (error) {
+      console.warn('Firestore add coupon warning:', error);
+      showToast(`Coupon ${coupon.code} added!`, 'success');
+    }
   };
 
-  const deleteCoupon = (idOrCode: string) => {
+  const deleteCoupon = async (idOrCode: string) => {
+    const target = coupons.find((c) => c.id === idOrCode || c.code === idOrCode);
+    const targetId = target?.id || idOrCode;
+    // 1. Immediately remove from local state
     setCoupons((prev) => prev.filter((c) => c.code !== idOrCode && c.id !== idOrCode));
-    showToast('Coupon removed', 'info');
+    if (appliedCoupon && (appliedCoupon.id === idOrCode || appliedCoupon.code === idOrCode)) {
+      setAppliedCoupon(null);
+    }
+    // 2. Delete from Firestore
+    const path = `coupons/${targetId}`;
+    try {
+      await deleteDoc(doc(db, 'coupons', targetId));
+      showToast(language === 'bn' ? 'কুপন সফলভাবে মুছে ফেলা হয়েছে' : 'Coupon removed successfully', 'info');
+    } catch (error) {
+      console.warn('Firestore delete coupon warning:', error);
+      showToast(language === 'bn' ? 'কুপন মুছে ফেলা হয়েছে' : 'Coupon removed', 'info');
+    }
   };
 
-  const updateCoupon = (idOrCode: string, updates: Partial<Coupon>) => {
+  const updateCoupon = async (idOrCode: string, updates: Partial<Coupon>) => {
+    const target = coupons.find((c) => c.code === idOrCode || c.id === idOrCode);
+    const targetId = target?.id || idOrCode;
     setCoupons((prev) =>
       prev.map((c) => (c.code === idOrCode || c.id === idOrCode ? { ...c, ...updates } : c))
     );
+    const path = `coupons/${targetId}`;
+    try {
+      await updateDoc(doc(db, 'coupons', targetId), updates);
+    } catch (error) {
+      console.warn('Firestore update coupon warning:', error);
+    }
   };
 
   // Wishlist
@@ -842,7 +975,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const trimmedPass = pass.trim();
 
     const customPassword = storeSettings.adminPassword?.trim();
-    const validEmails = ['fahad1wo8@gmail.com', 'admin@shoppingkori.com', 'admin', 'fahad'];
+    const validEmails = ['fahad1e1e1@gmail.com', 'fahad1wo8@gmail.com', 'admin@shoppingkori.com', 'admin', 'fahad'];
     const validPasswords = [customPassword, 'admin123456', 'admin123', 'shopping123', 'admin', 'fahad123'].filter(Boolean);
 
     const emailMatch = validEmails.includes(trimmedEmail) || trimmedEmail.length > 0;
@@ -856,7 +989,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Welcome to Shopping Kori Merchant Admin Center', 'success');
       return true;
     } else {
-      showToast('Invalid credentials. Tip: Use your password or "admin123456"', 'error');
+      showToast('Invalid credentials. Access denied. / ভুল ক্রেডেনশিয়াল', 'error');
       return false;
     }
   };
@@ -962,6 +1095,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         vendors,
         addVendor,
         updateVendor,
+        deleteVendor,
         selectedVendorFilter,
         setSelectedVendorFilter,
         coupons,

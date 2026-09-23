@@ -19,6 +19,7 @@ export const AdminCouponsTab: React.FC = () => {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
 
   // Form state
   const [code, setCode] = useState('');
@@ -86,15 +87,8 @@ export const AdminCouponsTab: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this coupon?')) {
-      try {
-        await deleteCoupon(id);
-        showToast('Coupon deleted', 'info');
-      } catch (err: any) {
-        showToast('Failed to delete coupon', 'error');
-      }
-    }
+  const handleDelete = (coupon: Coupon) => {
+    setCouponToDelete(coupon);
   };
 
   return (
@@ -193,8 +187,9 @@ export const AdminCouponsTab: React.FC = () => {
               </button>
 
               <button
-                onClick={() => handleDelete(coupon.id)}
-                className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                type="button"
+                onClick={() => handleDelete(coupon)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                 title="Delete coupon"
               >
                 <Trash2 className="w-4 h-4" />
@@ -325,6 +320,50 @@ export const AdminCouponsTab: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Coupon Confirmation Modal */}
+      {couponToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-stone-200 animate-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="font-bold text-base text-stone-900">
+                Delete Coupon? (কুপন মুছে ফেলুন)
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Are you sure you want to permanently delete coupon code{' '}
+                <strong className="text-stone-900 font-bold font-mono">"{couponToDelete.code}"</strong>?
+              </p>
+              <p className="text-[11px] text-stone-400">
+                Customers will no longer be able to use this discount code at checkout.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCouponToDelete(null)}
+                className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 active:scale-98 text-stone-700 font-semibold text-xs rounded-xl cursor-pointer transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = couponToDelete.id;
+                  setCouponToDelete(null);
+                  await deleteCoupon(id);
+                }}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -278,6 +278,105 @@
         }
       },
       "required": ["storeName", "whatsappNumber", "phone", "email", "address"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Marketplace partner merchant store",
+      "type": "object",
+      "properties": {
+        "shopName": {
+          "type": "string",
+          "description": "Store shop name",
+          "maxLength": 150
+        },
+        "storeName": {
+          "type": "string",
+          "description": "Store brand name",
+          "maxLength": 150
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Owner full name",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Vendor contact number",
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "description": "Vendor email address",
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "description": "Base city",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "description": "Store or warehouse address",
+          "maxLength": 300
+        },
+        "commissionRate": {
+          "type": "number",
+          "description": "Marketplace sales commission percentage"
+        },
+        "status": {
+          "type": "string",
+          "description": "Active or Suspended",
+          "maxLength": 50
+        },
+        "rating": {
+          "type": "number",
+          "description": "Seller rating score"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Verification status"
+        }
+      },
+      "required": ["storeName", "phone"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Promotional discount voucher code",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Unique promo voucher code",
+          "maxLength": 50
+        },
+        "discountType": {
+          "type": "string",
+          "description": "percentage or fixed",
+          "maxLength": 20
+        },
+        "discountValue": {
+          "type": "number",
+          "description": "Discount rate or amount"
+        },
+        "minSpend": {
+          "type": "number",
+          "description": "Minimum cart spend requirement in BDT"
+        },
+        "maxDiscount": {
+          "type": "number",
+          "description": "Maximum cap discount in BDT"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether coupon is currently active"
+        },
+        "description": {
+          "type": "string",
+          "description": "Promotional note",
+          "maxLength": 200
+        }
+      },
+      "required": ["code", "discountType", "discountValue", "isActive"]
     }
   },
   "firestore": {
@@ -288,6 +387,14 @@
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Orders placed by buyers for delivery"
+    },
+    "/vendors/{vendorId}": {
+      "schema": { "$ref": "#/entities/Vendor" },
+      "description": "Marketplace partner merchant stores"
+    },
+    "/coupons/{couponId}": {
+      "schema": { "$ref": "#/entities/Coupon" },
+      "description": "Promotional discount voucher codes"
     },
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/StoreSettings" },

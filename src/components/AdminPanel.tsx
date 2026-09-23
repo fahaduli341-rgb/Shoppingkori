@@ -65,9 +65,10 @@ export const AdminPanel: React.FC = () => {
   const [consignmentInput, setConsignmentInput] = useState('');
   const [adminNotesInput, setAdminNotesInput] = useState('');
 
-  // Product modal (Add / Edit)
+  // Product modal (Add / Edit / Delete)
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Product form state
   const [prodName, setProdName] = useState('');
@@ -278,13 +279,11 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleSeedMarketplace = async () => {
-    if (window.confirm('Populate catalog with fresh verified marketplace products and vendors? This will enhance your product categories.')) {
-      try {
-        await seedMarketplaceProducts();
-        showToast('Marketplace catalog updated with seed products & vendors!', 'success');
-      } catch (err: any) {
-        showToast('Failed to seed marketplace: ' + err.message, 'error');
-      }
+    try {
+      await seedMarketplaceProducts();
+      showToast('Marketplace catalog updated with seed products & vendors!', 'success');
+    } catch (err: any) {
+      showToast('Failed to seed marketplace: ' + (err.message || 'Error'), 'error');
     }
   };
 
@@ -753,11 +752,7 @@ export const AdminPanel: React.FC = () => {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => {
-                                if (window.confirm('Delete this product permanently?')) {
-                                  deleteProduct(p.id);
-                                }
-                              }}
+                              onClick={() => setProductToDelete(p)}
                               className="p-1.5 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                               title="Delete product"
                             >
@@ -1282,6 +1277,49 @@ export const AdminPanel: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* In-app Product Deletion Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-stone-200 animate-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="font-bold text-base text-stone-900">
+                Delete Product? (পণ্য মুছে ফেলুন)
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Are you sure you want to permanently delete{' '}
+                <strong className="text-stone-900 font-bold">"{productToDelete.name}"</strong>?
+              </p>
+              <p className="text-[11px] text-stone-400">
+                This item will be removed immediately from your live online storefront.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 active:scale-98 text-stone-700 font-semibold text-xs rounded-xl cursor-pointer transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = productToDelete.id;
+                  setProductToDelete(null);
+                  await deleteProduct(id);
+                }}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

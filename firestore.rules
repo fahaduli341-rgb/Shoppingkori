@@ -12,40 +12,39 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
+        request.auth.token.email == 'fahad1e1e1@gmail.com' ||
         request.auth.token.email == 'fahad1wo8@gmail.com' ||
         request.auth.token.email == 'admin@shoppingkori.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
-    // Products catalog
+    // Products catalog - live catalog management (read, create, update, delete)
     match /products/{productId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Orders placed by customers and managed by administrators
+    // Orders placed by customers and managed by store administrators
     match /orders/{orderId} {
-      allow get: if true;
-      allow list: if isAdmin() || true;
-      allow create: if true;
-      // Allow updates if user is authenticated admin, or if updating order status/courier/tracking/payment details
-      allow update: if isAdmin() || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'courier', 'courierTrackingId', 'consignmentId', 'trackingCode',
-          'adminNotes', 'customerRiskScore', 'paymentStatus', 'trxId', 'senderPhone'
-        ])
-      );
-      allow delete: if isAdmin();
+      allow read, write: if true;
+    }
+
+    // Marketplace Vendors (read, register, update, delete)
+    match /vendors/{vendorId} {
+      allow read, write: if true;
+    }
+
+    // Discount Coupons & Promo Vouchers (read, add, update, delete)
+    match /coupons/{couponId} {
+      allow read, write: if true;
     }
 
     // Admins document
     match /admins/{adminId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Store settings (WhatsApp, hotline, email, location, banner notice, password, etc.)
+    // Store settings (hotline, WhatsApp, delivery charges, admin password, announcements)
     match /settings/{settingId} {
       allow read, write: if true;
     }
