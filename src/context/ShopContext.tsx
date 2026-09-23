@@ -12,7 +12,9 @@ import {
   Coupon,
   CourierProvider,
   AdminRole,
-  Language
+  Language,
+  CustomerUser,
+  CustomerAccountRecord
 } from '../types';
 import { db, auth, googleProvider } from '../firebase';
 import {
@@ -82,8 +84,12 @@ interface ShopContextType {
   setShowAdminLoginModal: (show: boolean) => void;
   showPaymentGuideModal: boolean;
   setShowPaymentGuideModal: (show: boolean) => void;
-  customerUser: { name: string; email: string; phone: string } | null;
-  setCustomerUser: (user: { name: string; email: string; phone: string } | null) => void;
+  customerUser: CustomerUser | null;
+  setCustomerUser: (user: CustomerUser | null) => void;
+  registerCustomerAccount: (data: { name: string; phone: string; email?: string; password: string; address?: string }) => Promise<{ success: boolean; message: string }>;
+  loginCustomerAccount: (identifier: string, password: string) => Promise<{ success: boolean; message: string }>;
+  logoutCustomer: () => void;
+  confirmOrder: (orderId: string) => Promise<void>;
   storeSettings: StoreSettings;
   updateStoreSettings: (newSettings: Partial<StoreSettings>) => Promise<void>;
   toast: { message: string; type: 'success' | 'info' | 'error' } | null;
@@ -212,7 +218,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   // Customer Account
-  const [customerUser, setCustomerUser] = useState<{ name: string; email: string; phone: string } | null>(() => {
+  const [customerUser, setCustomerUser] = useState<CustomerUser | null>(() => {
     try {
       const saved = localStorage.getItem('sk_customer');
       if (saved) return JSON.parse(saved);
@@ -386,12 +392,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Sync Orders from Firestore real-time listener
+  // Sync customerUser to local storage
   useEffect(() => {
-    if (!isAdminLoggedIn) {
-      setOrders([]);
-      return;
+    if (customerUser) {
+      localStorage.setItem('sk_customer', JSON.stringify(customerUser));
+    } else {
+      localStorage.removeItem('sk_customer');
     }
+  }, [customerUser]);
+
+  // Sync Orders from Firestore real-time listener (live for admin & customer tracking)
+  useEffect(() => {
     const pathForOrders = 'orders';
     const unsubscribe = onSnapshot(
       collection(db, pathForOrders),
@@ -437,7 +448,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => unsubscribe();
-  }, [isAdminLoggedIn]);
+  }, []);
 
   // Sync local items
   useEffect(() => {
@@ -1031,6 +1042,132 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Customer Authentication operations
+  const registerCustomerAccount = async (data: {
+    name: string;
+    phone: string;
+    email?: string;
+    password: string;
+    address?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    const cleanPhone = data.phone.trim();
+    if (!cleanPhone || cleanPhone.length < 11) {
+      return { success: false, message: 'অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (01XXXXXXXXX)' };
+    }
+    if (!data.name.trim()) {
+      return { success: false, message: 'অনুগ্রহ করে আপনার নাম লিখুন' };
+    }
+    if (!data.password || data.password.length < 4) {
+      return { success: false, message: 'পাসওয়ার্ড অন্তত ৪ ডিজিটের হতে হবে' };
+    }
+
+    try {
+      const localDb: CustomerAccountRecord[] = JSON.parse(localStorage.getItem('sk_customers_db') || '[]');
+      const existing = localDb.find((u) => u.phone === cleanPhone);
+      if (existing) {
+        return { success: false, message: 'এই মোবাইল নম্বর দিয়ে ইতিমধ্যেই একাউন্ট রয়েছে। দয়া করে লগইন করুন।' };
+      }
+
+      const newRecord: CustomerAccountRecord = {
+        id: `CUST-${Date.now().toString().slice(-6)}`,
+        name: data.name.trim(),
+        phone: cleanPhone,
+        email: data.email?.trim() || '',
+        address: data.address?.trim() || '',
+        joinedDate: new Date().toISOString(),
+        passwordHash: data.password
+      };
+
+      localDb.push(newRecord);
+      localStorage.setItem('sk_customers_db', JSON.stringify(localDb));
+
+      try {
+        await setDoc(doc(db, 'customers', cleanPhone), newRecord);
+      } catch (fErr) {
+        console.warn('Customer firestore sync note:', fErr);
+      }
+
+      const userSession: CustomerUser = {
+        id: newRecord.id,
+        name: newRecord.name,
+        phone: newRecord.phone,
+        email: newRecord.email,
+        address: newRecord.address,
+        joinedDate: newRecord.joinedDate
+      };
+
+      setCustomerUser(userSession);
+      showToast('একাউন্ট সফলভাবে তৈরি হয়েছে! শপিং করি-তে স্বাগতম।', 'success');
+      return { success: true, message: 'একাউন্ট তৈরি সফল হয়েছে' };
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'একাউন্ট তৈরি ব্যর্থ হয়েছে' };
+    }
+  };
+
+  const loginCustomerAccount = async (identifier: string, password: string): Promise<{ success: boolean; message: string }> => {
+    const cleanId = identifier.trim();
+    if (!cleanId || !password) {
+      return { success: false, message: 'মোবাইল নম্বর/ইমেইল এবং পাসওয়ার্ড দিন' };
+    }
+
+    try {
+      const localDb: CustomerAccountRecord[] = JSON.parse(localStorage.getItem('sk_customers_db') || '[]');
+      let user = localDb.find(
+        (u) =>
+          u.phone === cleanId ||
+          (u.email && u.email.toLowerCase() === cleanId.toLowerCase())
+      );
+
+      if (!user) {
+        if (cleanId.startsWith('01') && cleanId.length === 11) {
+          const autoUser: CustomerAccountRecord = {
+            id: `CUST-${Date.now().toString().slice(-6)}`,
+            name: 'Customer',
+            phone: cleanId,
+            joinedDate: new Date().toISOString(),
+            passwordHash: password
+          };
+          localDb.push(autoUser);
+          localStorage.setItem('sk_customers_db', JSON.stringify(localDb));
+          user = autoUser;
+        } else {
+          return { success: false, message: 'একাউন্ট পাওয়া যায়নি। অনুগ্রহ করে সঠিক তথ্য দিন অথবা নতুন একাউন্ট তৈরি করুন।' };
+        }
+      }
+
+      if (user.passwordHash && user.passwordHash !== password) {
+        return { success: false, message: 'পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন।' };
+      }
+
+      const userSession: CustomerUser = {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        address: user.address,
+        joinedDate: user.joinedDate
+      };
+
+      setCustomerUser(userSession);
+      showToast(`স্বাগতম, ${user.name}!`, 'success');
+      return { success: true, message: 'লগইন সফল হয়েছে' };
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'লগইন ব্যর্থ হয়েছে' };
+    }
+  };
+
+  const logoutCustomer = () => {
+    setCustomerUser(null);
+    localStorage.removeItem('sk_customer');
+    showToast('একাউন্ট থেকে লগআউট করা হয়েছে', 'info');
+  };
+
+  // Direct order confirmation from Admin Panel
+  const confirmOrder = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'Confirmed');
+    showToast(`অর্ডার #${orderId} সফলভাবে কনফার্ম করা হয়েছে!`, 'success');
+  };
+
   const adminLogout = async () => {
     try {
       await signOut(auth);
@@ -1088,6 +1225,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setShowPaymentGuideModal,
         customerUser,
         setCustomerUser,
+        registerCustomerAccount,
+        loginCustomerAccount,
+        logoutCustomer,
+        confirmOrder,
         storeSettings,
         updateStoreSettings,
         toast,

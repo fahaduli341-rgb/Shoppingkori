@@ -249,6 +249,21 @@ export const defaultStoreSettings: StoreSettings = {
   bankDetails: 'Islami Bank Bangladesh Ltd (IBBL), A/C: 2050XXXXXXXXXX, Branch: Motijheel, Dhaka'
 };
 
+export interface CustomerUser {
+  id?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  division?: string;
+  district?: string;
+  joinedDate?: string;
+}
+
+export interface CustomerAccountRecord extends CustomerUser {
+  passwordHash?: string;
+}
+
 export type AppView =
   | 'home'
   | 'products'

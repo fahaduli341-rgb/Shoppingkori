@@ -29,6 +29,7 @@ export const Header: React.FC = () => {
     setSelectedSubCategory,
     isAdminLoggedIn,
     setShowAdminLoginModal,
+    customerUser,
     storeSettings,
     language,
     setLanguage,
@@ -103,16 +104,16 @@ export const Header: React.FC = () => {
                 setSearchQuery('');
                 setCurrentView('home');
               }}
-              className="flex items-center gap-2.5 group text-left cursor-pointer"
+              className="flex items-center gap-2 group text-left cursor-pointer shrink-0"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#E85D2C] to-amber-500 flex items-center justify-center text-white shadow-sm shadow-[#E85D2C]/20 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#E85D2C] to-amber-500 flex items-center justify-center text-white shadow-sm shadow-[#E85D2C]/20 group-hover:scale-105 transition-transform shrink-0">
                 <ShoppingBag className="w-5 h-5 text-white stroke-[2.2]" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#E85D2C] font-sans leading-none">
+                <span className="text-lg sm:text-2xl font-bold tracking-tight text-[#E85D2C] font-sans leading-none whitespace-nowrap">
                   Shopping<span className="text-[#1F6F4A]">Kori</span>
                 </span>
-                <span className="text-[11px] text-stone-600 font-medium mt-0.5 tracking-wide">
+                <span className="hidden sm:block text-[11px] text-stone-600 font-medium mt-0.5 tracking-wide">
                   {storeSettings.tagline || 'ঘরে বসে, বাজার করি'}
                 </span>
               </div>
@@ -142,7 +143,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Action Icons */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
             {/* Quick All Products Link for desktop */}
             <button
               id="desktop-all-products-btn"
@@ -187,31 +188,39 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Account Icon */}
+            {/* User Account / Profile */}
             <button
               id="header-account-btn"
               onClick={() => setCurrentView('account')}
-              className="p-2 text-stone-700 hover:text-[#E85D2C] hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-stone-700 hover:text-[#E85D2C] hover:bg-stone-100 rounded-full transition-colors cursor-pointer relative"
               aria-label="User Account"
+              title={customerUser ? `${customerUser.name} (My Account)` : 'User Account / একাউন্ট'}
             >
               <User className="w-5 h-5" />
+              {customerUser && (
+                <span className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+              )}
             </button>
 
-            {/* Admin portal badge if logged in */}
+            {/* Admin portal button - perfectly aligned and compact without overflow */}
             {isAdminLoggedIn ? (
               <button
                 id="header-admin-portal-btn"
                 onClick={() => setCurrentView('admin')}
-                className="ml-1 px-3 py-1 bg-stone-900 text-amber-400 text-xs font-semibold rounded-lg hover:bg-stone-800 transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-amber-400 text-xs font-bold rounded-full transition-all shadow-xs shrink-0 cursor-pointer"
+                title="Admin Dashboard (অ্যাডমিন প্যানেল)"
               >
-                Admin Panel
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] font-semibold tracking-wide">Admin</span>
               </button>
             ) : (
               <button
                 onClick={() => setShowAdminLoginModal(true)}
-                className="hidden sm:inline-flex text-[11px] font-semibold text-stone-500 hover:text-[#E85D2C] px-2 py-1 rounded border border-stone-200 hover:border-[#E85D2C] transition-colors cursor-pointer"
+                className="p-2 text-stone-500 hover:text-[#E85D2C] hover:bg-stone-100 rounded-full transition-colors cursor-pointer shrink-0"
+                title="Admin Portal Login"
+                aria-label="Admin Portal"
               >
-                {t.adminLogin}
+                <ShieldCheck className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -239,21 +248,22 @@ export const Header: React.FC = () => {
           </form>
         </div>
 
-        {/* Marketplace Category Sub-Navigation Bar (Bongeeo / Daraz style) */}
-        <div className="hidden md:flex items-center gap-2 pt-2 border-t border-stone-200/60 mt-2 overflow-x-auto no-scrollbar text-xs font-medium">
+        {/* Marketplace Category Sub-Navigation Bar (Daraz style horizontal menu) */}
+        <div className="hidden md:flex items-center gap-1.5 pt-2 border-t border-stone-200/60 mt-2 overflow-x-auto no-scrollbar text-xs font-medium">
           <button
             onClick={() => {
               setSelectedCategory('All');
               setSelectedSubCategory('All');
               setCurrentView('products');
             }}
-            className={`px-3 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 ${
               selectedCategory === 'All'
-                ? 'bg-[#E85D2C] text-white font-bold'
+                ? 'bg-[#E85D2C] text-white font-bold shadow-2xs'
                 : 'text-stone-700 hover:bg-stone-100 hover:text-[#E85D2C]'
             }`}
           >
-            {t.allCategories}
+            <Package className="w-3.5 h-3.5" />
+            <span>{t.allCategories}</span>
           </button>
 
           {CATEGORIES_DATA.map((cat) => (
@@ -264,33 +274,45 @@ export const Header: React.FC = () => {
                 setSelectedSubCategory('All');
                 setCurrentView('products');
               }}
-              className={`px-3 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                 selectedCategory === cat.id
-                  ? 'bg-[#1F6F4A] text-white font-bold'
+                  ? 'bg-[#1F6F4A] text-white font-bold shadow-2xs'
                   : 'text-stone-700 hover:bg-stone-100 hover:text-[#1F6F4A]'
               }`}
             >
               {language === 'bn' ? cat.nameBn : cat.nameEn}
             </button>
           ))}
+
+          <div className="h-4 w-px bg-stone-200 mx-1 shrink-0" />
+
+          {/* Quick Track Order Link */}
+          <button
+            onClick={() => setCurrentView('tracking')}
+            className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0 text-stone-600 hover:text-[#E85D2C] hover:bg-orange-50 font-semibold ${
+              currentView === 'tracking' ? 'text-[#E85D2C] bg-orange-50' : ''
+            }`}
+          >
+            {t.trackOrder}
+          </button>
         </div>
       </div>
 
       {/* Slide-out Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50 overflow-hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
           {/* Drawer Menu */}
-          <div className="relative w-72 sm:w-80 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
+          <div className="fixed inset-y-0 left-0 w-[290px] max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200 overflow-hidden">
             {/* Drawer Header */}
-            <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-[#FDFBF7]">
+            <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-[#FDFBF7] shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#E85D2C] flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-lg bg-[#E85D2C] flex items-center justify-center text-white shrink-0">
                   <ShoppingBag className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
@@ -300,22 +322,44 @@ export const Header: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1 text-stone-500 hover:text-stone-900 rounded-md"
+                className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg cursor-pointer transition-colors"
+                aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Language Toggle in Drawer */}
-            <div className="px-4 py-2 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+            <div className="px-4 py-2.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-stone-600">Language / ভাষা:</span>
               <button
                 onClick={toggleLanguage}
-                className="text-xs font-bold text-[#E85D2C] bg-white border border-stone-300 px-3 py-1 rounded-md"
+                className="text-xs font-bold text-[#E85D2C] bg-white hover:bg-orange-50 border border-stone-300 px-3 py-1 rounded-lg transition-colors cursor-pointer"
               >
                 {language === 'bn' ? 'English এ পরিবর্তন করুন' : 'Switch to বাংলা'}
               </button>
             </div>
+
+            {/* If Admin is logged in, show direct admin dashboard button */}
+            {isAdminLoggedIn && (
+              <div className="p-3 bg-amber-50/80 border-b border-amber-200/80 shrink-0">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setCurrentView('admin');
+                  }}
+                  className="w-full py-2.5 px-3 bg-stone-900 hover:bg-stone-800 text-amber-400 font-bold text-xs rounded-xl flex items-center justify-between shadow-xs transition-all cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>Admin Panel (অ্যাডমিন)</span>
+                  </span>
+                  <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-mono">
+                    Online
+                  </span>
+                </button>
+              </div>
+            )}
 
             {/* Drawer Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">

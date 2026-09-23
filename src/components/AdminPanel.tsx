@@ -48,6 +48,7 @@ export const AdminPanel: React.FC = () => {
     updateProduct,
     deleteProduct,
     updateOrderStatus,
+    confirmOrder,
     adminLogout,
     setCurrentView,
     showToast,
@@ -498,6 +499,32 @@ export const AdminPanel: React.FC = () => {
         {/* TAB 1: ORDERS MANAGEMENT */}
         {activeTab === 'orders' && (
           <div className="space-y-4">
+            {/* Pending Orders Alert Banner */}
+            {orders.some((o) => o.status === 'Pending') && (
+              <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    {orders.filter((o) => o.status === 'Pending').length}
+                  </span>
+                  <div>
+                    <h4 className="font-bold text-sm text-stone-900 flex items-center gap-1.5">
+                      <span>অপেক্ষমাণ নতুন অর্ডার (Pending Orders to Confirm)</span>
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                    </h4>
+                    <p className="text-xs text-stone-600">
+                      নতুন অর্ডার এসেছে। সরাসরি "Confirm Order" বাটনে চাপ দিয়ে নিশ্চিত করুন অথবা ফোনে কথা বলুন।
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setOrderFilter('Pending')}
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Pending অর্ডারগুলো ফিল্টার করুন ({orders.filter((o) => o.status === 'Pending').length})
+                </button>
+              </div>
+            )}
+
             {/* Filter Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80">
               <div className="flex items-center gap-2">
@@ -614,11 +641,28 @@ export const AdminPanel: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="p-4 align-top space-y-2">
+                        <td className="p-4 align-top space-y-1.5 min-w-[140px]">
+                          {/* 1-Click Order Confirmation */}
+                          {ord.status === 'Pending' ? (
+                            <button
+                              onClick={() => confirmOrder(ord.id)}
+                              className="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer animate-pulse"
+                              title="অর্ডার নিশ্চিত করতে ক্লিক করুন"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Confirm (নিশ্চিত করুন)</span>
+                            </button>
+                          ) : ord.status === 'Confirmed' ? (
+                            <div className="w-full py-1 px-2 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Confirmed (নিশ্চিত)</span>
+                            </div>
+                          ) : null}
+
                           <select
                             value={ord.status}
                             onChange={(e) => updateOrderStatus(ord.id, e.target.value as OrderStatus)}
-                            className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-800 focus:outline-hidden focus:border-[#E85D2C] cursor-pointer shadow-2xs w-full"
+                            className="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold text-stone-800 focus:outline-hidden focus:border-[#E85D2C] cursor-pointer shadow-2xs w-full"
                           >
                             <option value="Pending">Pending</option>
                             <option value="Confirmed">Confirmed</option>
@@ -848,6 +892,52 @@ export const AdminPanel: React.FC = () => {
                   placeholder="e.g. Handed over to courier pickup boy on 17 Sep..."
                   className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-[#E85D2C]"
                 />
+              </div>
+
+              {/* Direct Order Confirmation & Call Customer Actions */}
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-700">বর্তমান স্ট্যাটাস:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                    selectedOrder.status === 'Delivered'
+                      ? 'bg-emerald-200 text-emerald-900'
+                      : selectedOrder.status === 'Confirmed'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-900'
+                  }`}>
+                    {selectedOrder.status}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {selectedOrder.status === 'Pending' ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await confirmOrder(selectedOrder.id);
+                        setSelectedOrder((prev) => (prev ? { ...prev, status: 'Confirmed' } : null));
+                      }}
+                      className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Confirm Order (অর্ডার নিশ্চিত করুন)</span>
+                    </button>
+                  ) : (
+                    <div className="flex-1 py-1.5 px-3 bg-white border border-emerald-300 text-emerald-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <span>অর্ডার ইতিমধ্যে কনফার্ম করা আছে</span>
+                    </div>
+                  )}
+
+                  <a
+                    href={`tel:${selectedOrder.phone}`}
+                    className="py-2 px-3 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="কাস্টমারকে সরাসরি কল করুন"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Call Customer</span>
+                  </a>
+                </div>
               </div>
 
               {/* Order Address Preview */}
